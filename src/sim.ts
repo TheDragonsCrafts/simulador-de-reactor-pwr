@@ -457,34 +457,35 @@ export const buildDetectors = (sim: SimulationState): DetectorReading[] => {
   ];
 
   // Apply shield reduction & redistribution
-  const shieldedValues = rawValues.map((raw, i) => {
+  const shieldedValues = new Array(4);
+  let totalBlocked = 0;
+  let unshieldedCount = 0;
+
+  for (let i = 0; i < 4; i++) {
+    const raw = rawValues[i];
     if (sim.radiationShields[i]) {
       const efficiency = (sim.shieldEfficiency[i] / 100);
-      return raw * (1 - SHIELD_MAX_REDUCTION * efficiency);
+      const reduction = SHIELD_MAX_REDUCTION * efficiency;
+      shieldedValues[i] = raw * (1 - reduction);
+      totalBlocked += raw * reduction;
+    } else {
+      shieldedValues[i] = raw;
+      unshieldedCount++;
     }
-    return raw;
-  });
+  }
 
-  // Compute total blocked radiation and redistribute to unshielded zones
-  const totalBlocked = rawValues.reduce((sum, raw, i) => {
-    if (sim.radiationShields[i]) {
-      const efficiency = (sim.shieldEfficiency[i] / 100);
-      return sum + raw * SHIELD_MAX_REDUCTION * efficiency;
-    }
-    return sum;
-  }, 0);
-
-  const unshieldedCount = sim.radiationShields.filter((s) => !s).length;
   const redistributionPerZone = unshieldedCount > 0
     ? (totalBlocked * SHIELD_REDISTRIBUTION) / unshieldedCount
     : 0;
 
-  const finalValues = shieldedValues.map((val, i) => {
+  const finalValues = new Array(4);
+  for (let i = 0; i < 4; i++) {
     if (!sim.radiationShields[i] && unshieldedCount > 0) {
-      return clamp(val + redistributionPerZone, 0, 240);
+      finalValues[i] = clamp(shieldedValues[i] + redistributionPerZone, 0, 240);
+    } else {
+      finalValues[i] = shieldedValues[i];
     }
-    return val;
-  });
+  }
 
   return [
     { label: 'DET-A', zone: 'Anillo superior', value: finalValues[0] },
