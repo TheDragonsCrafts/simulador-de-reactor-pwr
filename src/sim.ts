@@ -299,18 +299,7 @@ export const cloneState = (state: SimulationState): SimulationState => ({
   shieldEfficiency: [...state.shieldEfficiency],
   shieldActiveSeconds: [...state.shieldActiveSeconds],
   upgrades: { ...state.upgrades },
-  history: {
-    temp: [...state.history.temp],
-    pressure: [...state.history.pressure],
-    radiation: [...state.history.radiation],
-    power: [...state.history.power],
-    coolant: [...state.history.coolant],
-    reactivity: [...state.history.reactivity],
-    primaryFlow: [...state.history.primaryFlow],
-    secondaryFlow: [...state.history.secondaryFlow],
-    efficiency: [...state.history.efficiency],
-    thermalPower: [...state.history.thermalPower],
-  },
+  history: { ...state.history },
 });
 
 import {
