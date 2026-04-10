@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { playScramAlarm, playPumpClick, playAlertSound, playSuccessSound } from './audio';
 import {
   LOG_LIMIT,
   OVERCLOCK_COOLDOWN,
@@ -66,6 +67,11 @@ export function useSimulation() {
         ...draft,
         id: noticeIdRef.current++,
       }));
+
+      mapped.forEach(n => {
+        if (n.tone === 'danger') playAlertSound();
+        if (n.tone === 'success') playSuccessSound();
+      });
 
       return [...mapped, ...current].slice(0, 4);
     });
@@ -171,6 +177,7 @@ export function useSimulation() {
       }
 
       draft.primaryPumpActive = !draft.primaryPumpActive;
+      playPumpClick();
       helpers.addLog(
         draft.primaryPumpActive ? 'INFO' : 'WARN',
         `Orden a bomba primaria: ${
@@ -217,6 +224,7 @@ export function useSimulation() {
       }
 
       draft.secondaryPumpActive = !draft.secondaryPumpActive;
+      playPumpClick();
       helpers.addLog(
         draft.secondaryPumpActive ? 'INFO' : 'WARN',
         `Orden a bomba secundaria: ${
@@ -503,6 +511,7 @@ export function useSimulation() {
     transact((draft, helpers) => {
       draft.controlRodsTarget = 100;
       draft.gameState = 'SCRAMMED';
+      playScramAlarm();
       helpers.addLog(
         'CRITICAL',
         'SCRAM iniciado. Inserción total de barras en curso.',
