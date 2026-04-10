@@ -1505,7 +1505,7 @@ function updateDamageAndRadiation(next: SimulationState, dt: number) {
   );
 }
 
-function calculateElectricalOutput(next: SimulationState, dt: number, exportPrice: number) {
+function calculateElectricalOutput(next: SimulationState, dt: number) {
   const coolantProfile = getCoolantProfile(next.coolantProfile);
   const overclockActive = next.overclockTicks > 0;
   const coolantMassFactor = clamp(next.coolantLevel / 100, 0, 1);
@@ -1548,7 +1548,7 @@ function calculateElectricalOutput(next: SimulationState, dt: number, exportPric
 
   const energyThisTick = (next.powerOutput / 3600) * dt;
   next.energyGenerated += energyThisTick;
-  next.funds += energyThisTick * exportPrice - (coolantProfile.upkeepPerTick * dt);
+  next.funds += energyThisTick * computeExportPrice(next) - (coolantProfile.upkeepPerTick * dt);
 }
 
 function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
@@ -1910,9 +1910,9 @@ function updateEconomy(next: SimulationState, dt: number) {
   const cyclePhase = (next.energyGenerated * 0.05) % (Math.PI * 2);
   const sineFluctuation = Math.sin(cyclePhase) * 150; // +- 150 fluctuation
   const noise = (Math.random() - 0.5) * 20; // noise
-  
+
   next.marketPrice = clamp(basePrice + sineFluctuation + noise, 200, 1500);
-  
+
   const baseDemand = 50;
   const demandSine = Math.cos(cyclePhase * 0.8) * 30; // slightly different phase
   next.marketDemand = clamp(baseDemand + demandSine + noise, 0, 100);
@@ -1928,8 +1928,6 @@ export const advanceSimulation = (
   const SUBTICKS = 10;
   const dt = 1.0 / SUBTICKS;
 
-  const exportPrice = computeExportPrice(next);
-
   for (let i = 0; i < SUBTICKS; i++) {
     if (isTerminalState(next)) break;
 
@@ -1937,7 +1935,7 @@ export const advanceSimulation = (
     calculateReactivityDynamics(next, dt);
     updateThermalDynamics(next, dt);
     updateDamageAndRadiation(next, dt);
-    calculateElectricalOutput(next, dt, exportPrice);
+    calculateElectricalOutput(next, dt);
     updateChemistryAndMaintenance(next, dt);
     updateEconomy(next, dt);
 
