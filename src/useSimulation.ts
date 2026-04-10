@@ -567,6 +567,7 @@ export function useSimulation() {
   const toggleRadiationShield = (zone: number) => {
     transact((draft, helpers) => {
       if (zone < 0 || zone > 3) return;
+      draft.radiationShields = [...draft.radiationShields];
       draft.radiationShields[zone] = !draft.radiationShields[zone];
       const zoneNames = ['Anillo superior', 'Blindaje oeste', 'Canal de vapor', 'Edificio de turbina'];
       const state = draft.radiationShields[zone] ? 'activado' : 'desactivado';
@@ -685,6 +686,7 @@ export function useSimulation() {
       }
       
       draft.funds -= cost;
+      draft.upgrades = { ...draft.upgrades };
       draft.upgrades[upgradeId] = true;
       helpers.addLog('INFO', `Mejora adquirida: ${String(upgradeId)}.`);
       helpers.addNotice('success', 'Mejora instalada', 'La mejora ya está operativa en la planta.');
