@@ -62,16 +62,16 @@ export function useSimulation() {
   const pushNoticeQueue = (drafts: NoticeDraft[]) => {
     if (drafts.length === 0) return;
 
+    drafts.forEach(n => {
+      if (n.tone === 'danger') playAlertSound();
+      if (n.tone === 'success') playSuccessSound();
+    });
+
     setNotices((current) => {
       const mapped = drafts.map((draft) => ({
         ...draft,
         id: noticeIdRef.current++,
       }));
-
-      mapped.forEach(n => {
-        if (n.tone === 'danger') playAlertSound();
-        if (n.tone === 'success') playSuccessSound();
-      });
 
       return [...mapped, ...current].slice(0, 4);
     });
@@ -166,6 +166,7 @@ export function useSimulation() {
   };
 
   const togglePrimaryPump = () => {
+    let playedAudio = false;
     transact((draft, helpers) => {
       if (!draft.primaryPumpActive && draft.primaryPumpHealth === 0) {
         helpers.addNotice(
@@ -177,7 +178,7 @@ export function useSimulation() {
       }
 
       draft.primaryPumpActive = !draft.primaryPumpActive;
-      playPumpClick();
+      playedAudio = true;
       helpers.addLog(
         draft.primaryPumpActive ? 'INFO' : 'WARN',
         `Orden a bomba primaria: ${
@@ -185,6 +186,9 @@ export function useSimulation() {
         }.`,
       );
     });
+    if (playedAudio) {
+      playPumpClick();
+    }
   };
 
   const setPrimaryPumpDemand = (value: number) => {
@@ -213,6 +217,7 @@ export function useSimulation() {
   };
 
   const toggleSecondaryPump = () => {
+    let playedAudio = false;
     transact((draft, helpers) => {
       if (!draft.secondaryPumpActive && draft.secondaryPumpHealth === 0) {
         helpers.addNotice(
@@ -224,7 +229,7 @@ export function useSimulation() {
       }
 
       draft.secondaryPumpActive = !draft.secondaryPumpActive;
-      playPumpClick();
+      playedAudio = true;
       helpers.addLog(
         draft.secondaryPumpActive ? 'INFO' : 'WARN',
         `Orden a bomba secundaria: ${
@@ -232,6 +237,9 @@ export function useSimulation() {
         }.`,
       );
     });
+    if (playedAudio) {
+      playPumpClick();
+    }
   };
 
   const togglePurgeValve = () => {
@@ -511,7 +519,6 @@ export function useSimulation() {
     transact((draft, helpers) => {
       draft.controlRodsTarget = 100;
       draft.gameState = 'SCRAMMED';
-      playScramAlarm();
       helpers.addLog(
         'CRITICAL',
         'SCRAM iniciado. Inserción total de barras en curso.',
@@ -522,6 +529,7 @@ export function useSimulation() {
         'Se ordenó inserción total de barras. Vigila calor residual, presión y agua.',
       );
     });
+    playScramAlarm();
   };
 
   const triggerOverclock = () => {
