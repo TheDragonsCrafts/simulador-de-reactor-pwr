@@ -1215,7 +1215,7 @@ export const getTurbineRotorRpm = (sim: SimulationState) =>
   450 + getTurbineRotorRatio(sim) * 3150;
 
 export const getGeneratorLoad = (sim: SimulationState) =>
-  clamp((sim.powerOutput / 520) * 100, 0, 100);
+  clamp((sim.powerOutput / 1000) * 100, 0, 100);
 
 export const getThermalUse = (sim: SimulationState) =>
   clamp((sim.powerOutput / Math.max(sim.thermalPower, 1)) * 100, 0, 100);
@@ -1427,7 +1427,7 @@ function updateThermalDynamics(next: SimulationState, dt: number) {
   next.coreTemp = clamp(
     next.coreTemp + (tempTarget - next.coreTemp) * (0.14 * dt) - naturalCooling * (0.04 * dt),
     30,
-    1500,
+    2500,
   );
 
   const pressureTarget =
@@ -1446,7 +1446,7 @@ function updateThermalDynamics(next: SimulationState, dt: number) {
   next.pressure = clamp(
     next.pressure + (pressureTarget - next.pressure) * (0.24 * dt),
     4,
-    24,
+    40,
   );
 }
 
@@ -1540,7 +1540,7 @@ function calculateElectricalOutput(next: SimulationState, dt: number) {
   next.powerOutput = clamp(
     next.powerOutput + (powerTarget - next.powerOutput) * (0.25 * dt),
     0,
-    520,
+    1000,
   );
 
   const energyThisTick = (next.powerOutput / 3600) * dt;
