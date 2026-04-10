@@ -1497,7 +1497,7 @@ function updateDamageAndRadiation(next: SimulationState, dt: number) {
     (1 - coolantProfile.radiationFactor) * 26 -
     (next.containmentSprayActive ? 2.1 * (0.35 + sprayAvailability * 0.65) : 0);
 
-  const radiationTarget = baseRadiationTarget * (1 - radiationReduction);
+  const radiationTarget = baseRadiationTarget > 0 ? baseRadiationTarget * (1 - radiationReduction) : baseRadiationTarget;
   next.radiationLevel = clamp(
     next.radiationLevel + (radiationTarget - next.radiationLevel) * (0.24 * dt),
     0,
