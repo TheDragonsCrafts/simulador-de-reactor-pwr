@@ -25,7 +25,7 @@ export {
 };
 
 export type GameState = 'RUNNING' | 'SCRAMMED' | 'MELTDOWN' | 'EXPLOSION';
-export type SimView = 'reactor' | 'turbine';
+export type SimView = 'reactor' | 'turbine' | 'store';
 export type LogLevel = 'INFO' | 'WARN' | 'DANGER' | 'CRITICAL';
 export type NoticeTone = 'info' | 'success' | 'warning' | 'danger';
 export type AlertSeverity = 'warning' | 'danger' | 'critical';
@@ -77,9 +77,16 @@ export interface CoolantProfileSpec {
 }
 
 export interface UpgradesState {
-  heavyPumps: boolean;
-  fastRods: boolean;
-  betterInsulation: boolean;
+  rods: number;
+  pumps: number;
+  insulation: number;
+  radiation: number;
+  security: number;
+  maxTemp: number;
+  maxPressure: number;
+  energyGeneration: number;
+  turbines: number;
+  generator: number;
 }
 
 export interface SimulationState {
@@ -307,7 +314,7 @@ export const cloneState = (state: SimulationState): SimulationState => ({
 });
 
 import {
-  SHIELD_COST_PER_TICK,
+  SHIELD_ACTIVATION_COST,
   SHIELD_REPAIR_COST,
   SHIELD_MAX_REDUCTION,
   SHIELD_REDISTRIBUTION,
@@ -316,7 +323,7 @@ import {
 } from './config/physicsConstants';
 
 export {
-  SHIELD_COST_PER_TICK,
+  SHIELD_ACTIVATION_COST,
   SHIELD_REPAIR_COST,
   SHIELD_MAX_REDUCTION,
   SHIELD_REDISTRIBUTION,
@@ -380,9 +387,16 @@ export const createInitialState = (): SimulationState => ({
   marketDemand: 50,
   marketPrice: 60,
   upgrades: {
-    fastRods: false,
-    heavyPumps: false,
-    betterInsulation: false,
+    rods: 0,
+    pumps: 0,
+    insulation: 0,
+    radiation: 0,
+    security: 0,
+    maxTemp: 0,
+    maxPressure: 0,
+    energyGeneration: 0,
+    turbines: 0,
+    generator: 0,
   },
   fissionState: 'Critica estable',
   radiationShields: [false, false, false, false],
@@ -483,10 +497,13 @@ export const buildDetectors = (sim: SimulationState): DetectorReading[] => {
 export const computeRiskIndex = (sim: SimulationState) => {
   if (isTerminalState(sim)) return 100;
 
+  const effectiveMaxTemp = MAX_TEMP + (sim.upgrades?.maxTemp || 0) * 80;
+  const effectiveMaxPressure = MAX_PRESSURE + (sim.upgrades?.maxPressure || 0) * 2;
+
   const temperatureRisk =
-    clamp((sim.coreTemp - 300) / (MAX_TEMP - 300), 0, 1) * 26;
+    clamp((sim.coreTemp - 300) / (effectiveMaxTemp - 300), 0, 1) * 26;
   const pressureRisk =
-    clamp((sim.pressure - 15) / (MAX_PRESSURE - 15), 0, 1) * 18;
+    clamp((sim.pressure - 15) / (effectiveMaxPressure - 15), 0, 1) * 18;
   const radiationRisk = clamp(sim.radiationLevel / 130, 0, 1) * 16;
   const containmentRisk =
     clamp((100 - sim.containmentIntegrity) / 100, 0, 1) * 12;
@@ -1201,7 +1218,7 @@ export const getTurbineRotorRpm = (sim: SimulationState) =>
   450 + getTurbineRotorRatio(sim) * 3150;
 
 export const getGeneratorLoad = (sim: SimulationState) =>
-  clamp((sim.powerOutput / 520) * 100, 0, 100);
+  clamp((sim.powerOutput / 1000) * 100, 0, 100);
 
 export const getThermalUse = (sim: SimulationState) =>
   clamp((sim.powerOutput / Math.max(sim.thermalPower, 1)) * 100, 0, 100);
@@ -1217,7 +1234,8 @@ export const getTurbineSyncState = (sim: SimulationState) => {
 
 function updateMechanics(next: SimulationState, dt: number) {
   const baseSlewRate = next.controlRodsTarget >= next.controlRods ? 9.5 : 5.5;
-  const rodSlewRate = next.upgrades?.fastRods ? baseSlewRate * 2 : baseSlewRate;
+  const rodsMultiplier = 1 + (next.upgrades?.rods || 0) * 0.25; // Up to 2.25x speed
+  const rodSlewRate = baseSlewRate * rodsMultiplier;
   const rodDelta = next.controlRodsTarget - next.controlRods;
   next.controlRods = clamp(
     next.controlRods + clamp(rodDelta, -rodSlewRate, rodSlewRate) * dt,
@@ -1393,7 +1411,8 @@ function updateThermalDynamics(next: SimulationState, dt: number) {
     clamp((120 - effectiveHeat) / 120, 0, 1) *
     (1 - clamp(next.reactivity / 0.08, 0, 1));
   const equilibriumTempFloor = 285 - shutdownCoolingBias * 205;
-  const leakLoss = leakFactor * 48 * (next.upgrades.betterInsulation ? 0.5 : 1);
+  const insulationMultiplier = 1 - (next.upgrades?.insulation || 0) * 0.12; // Up to 60% less heat loss
+  const leakLoss = leakFactor * 48 * insulationMultiplier;
   const tempTarget =
     equilibriumTempFloor +
     effectiveHeat * 0.29 -
@@ -1411,7 +1430,7 @@ function updateThermalDynamics(next: SimulationState, dt: number) {
   next.coreTemp = clamp(
     next.coreTemp + (tempTarget - next.coreTemp) * (0.14 * dt) - naturalCooling * (0.04 * dt),
     30,
-    1500,
+    2500,
   );
 
   const pressureTarget =
@@ -1430,7 +1449,7 @@ function updateThermalDynamics(next: SimulationState, dt: number) {
   next.pressure = clamp(
     next.pressure + (pressureTarget - next.pressure) * (0.24 * dt),
     4,
-    24,
+    40,
   );
 }
 
@@ -1464,7 +1483,8 @@ function updateDamageAndRadiation(next: SimulationState, dt: number) {
     100,
   );
 
-  const radiationTarget =
+  const radiationReduction = (next.upgrades?.radiation || 0) * 0.1; // Up to 50% less radiation output
+  const baseRadiationTarget =
     next.neutronFlux * 0.22 +
     Math.max(0, next.coreTemp - 320) * 0.03 +
     next.steamVoids * 0.11 +
@@ -1476,6 +1496,8 @@ function updateDamageAndRadiation(next: SimulationState, dt: number) {
     (next.purgeValveOpen ? 7 : 0) -
     (1 - coolantProfile.radiationFactor) * 26 -
     (next.containmentSprayActive ? 2.1 * (0.35 + sprayAvailability * 0.65) : 0);
+
+  const radiationTarget = baseRadiationTarget > 0 ? baseRadiationTarget * (1 - radiationReduction) : baseRadiationTarget;
   next.radiationLevel = clamp(
     next.radiationLevel + (radiationTarget - next.radiationLevel) * (0.24 * dt),
     0,
@@ -1496,13 +1518,15 @@ function calculateElectricalOutput(next: SimulationState, dt: number) {
     1,
   );
 
+  const generatorMultiplier = 1 + (next.upgrades?.generator || 0) * 0.05; // Up to 25% better conversion
   const electricalEfficiency =
     (next.turbineEfficiency / 100) *
     (next.chemistryBalance / 100) *
     (next.secondaryPumpFlow / 100) *
     (0.25 + steamTransportFactor * 0.75) *
     0.46 *
-    coolantProfile.powerFactor;
+    coolantProfile.powerFactor * generatorMultiplier;
+  const energyGenerationMultiplier = 1 + (next.upgrades?.energyGeneration || 0) * 0.1; // Up to 50% more generated MW out of thermal energy
   const powerTarget =
     steamTransportFactor > 0.08 &&
     next.secondaryPumpFlow > 18 &&
@@ -1512,13 +1536,14 @@ function calculateElectricalOutput(next: SimulationState, dt: number) {
           0,
           next.thermalPower *
             electricalEfficiency *
-            (overclockActive ? 1.34 * coolantProfile.overclockFactor : 1),
+            (overclockActive ? 1.34 * coolantProfile.overclockFactor : 1) *
+            energyGenerationMultiplier,
         )
       : 0;
   next.powerOutput = clamp(
     next.powerOutput + (powerTarget - next.powerOutput) * (0.25 * dt),
     0,
-    520,
+    1000,
   );
 
   const energyThisTick = (next.powerOutput / 3600) * dt;
@@ -1540,8 +1565,10 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
 
   next.fuelLevel = clamp(next.fuelLevel - next.reactivity * (0.018 * dt), 0, 100);
   next.boronLevel = clamp(next.boronLevel - next.reactivity * (0.01 * dt), 0, 100);
+
+  const pumpsWearMultiplier = 1 - (next.upgrades?.pumps || 0) * 0.15; // Up to 75% less wear
+
   if (next.primaryPumpFlow > 4) {
-    const heavyPumpsMultiplier = next.upgrades?.heavyPumps ? 0.5 : 1.0;
     next.primaryPumpHealth = clamp(
       next.primaryPumpHealth -
         (0.02 +
@@ -1550,7 +1577,7 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
           Math.max(0, next.coreTemp - 340) * 0.0018 +
           primaryOverdrive * 0.65 +
           (overclockActive ? 0.03 : 0) +
-          (next.purgeValveOpen ? 0.012 : 0)) * dt * heavyPumpsMultiplier,
+          (next.purgeValveOpen ? 0.012 : 0)) * dt * pumpsWearMultiplier,
       0,
       100,
     );
@@ -1563,17 +1590,18 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
           (next.secondaryPumpFlow / 100) * 0.024 +
           next.powerOutput * 0.00005 +
           leakFactor * 0.015 +
-          Math.max(0, next.pressure - 16.5) * 0.02) * dt,
+          Math.max(0, next.pressure - 16.5) * 0.02) * dt * pumpsWearMultiplier,
       0,
       100,
     );
   }
 
+  const turbinesWearMultiplier = 1 - (next.upgrades?.turbines || 0) * 0.15; // Up to 75% less wear
   next.turbineEfficiency = clamp(
     next.turbineEfficiency -
       (0.014 +
         Math.max(0, next.pressure - 16.5) * 0.035 +
-        (next.secondaryPumpFlow > 8 ? 0.004 : 0)) * dt,
+        (next.secondaryPumpFlow > 8 ? 0.004 : 0)) * dt * turbinesWearMultiplier,
     0,
     100,
   );
@@ -1618,7 +1646,6 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
     100,
   );
 
-  let shieldCostThisTick = 0;
   for (let i = 0; i < 4; i++) {
     if (next.radiationShields[i]) {
       next.shieldActiveSeconds[i] += dt;
@@ -1628,7 +1655,6 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
         25,
         100,
       );
-      shieldCostThisTick += SHIELD_COST_PER_TICK * dt;
     } else {
       next.shieldActiveSeconds[i] = 0;
       next.shieldEfficiency[i] = clamp(
@@ -1638,7 +1664,6 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
       );
     }
   }
-  next.funds -= shieldCostThisTick;
 
   if (
     next.coreTemp > 720 ||
@@ -1646,12 +1671,13 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
     next.radiationLevel > 70 ||
     next.coolantLevel < 18
   ) {
+    const securityLossMultiplier = 1 - (next.upgrades?.security || 0) * 0.15; // Up to 75% less containment loss
     const containmentLoss =
-      Math.max(0, next.radiationLevel - 35) * 0.03 +
+      (Math.max(0, next.radiationLevel - 35) * 0.03 +
       Math.max(0, next.pressure - 17) * 1.05 +
       Math.max(0, next.coreTemp - 720) * 0.02 +
       exposureFactor * 0.8 +
-      next.coreDamage * 0.08;
+      next.coreDamage * 0.08) * securityLossMultiplier;
     next.containmentIntegrity = clamp(
       next.containmentIntegrity - (containmentLoss * dt),
       0,
@@ -1919,8 +1945,11 @@ export const advanceSimulation = (
       next.radiationLevel > 180 &&
       next.coreDamage > 72;
 
+    const effectiveMaxTemp = MAX_TEMP + (next.upgrades?.maxTemp || 0) * 80;
+    const effectiveMaxPressure = MAX_PRESSURE + (next.upgrades?.maxPressure || 0) * 2;
+
     if (
-      next.coreTemp > MAX_TEMP ||
+      next.coreTemp > effectiveMaxTemp ||
       next.coreDamage > 96 ||
       dryCoreMeltdown ||
       uncontainedCoreDamage
@@ -1929,7 +1958,7 @@ export const advanceSimulation = (
       next.containmentIntegrity = 0;
       next.fissionState = 'Fusion';
       break;
-    } else if (next.pressure > MAX_PRESSURE) {
+    } else if (next.pressure > effectiveMaxPressure) {
       next.gameState = 'EXPLOSION';
       next.containmentIntegrity = 0;
       break;

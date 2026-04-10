@@ -10,6 +10,7 @@ import {
 
 import { ReactorPage } from './components/ReactorPage';
 import { TurbinePage } from './components/TurbinePage';
+import { StorePage } from './components/StorePage';
 import {
   GameOverModal,
   GuideDrawer,
@@ -35,10 +36,14 @@ import { useSimulation } from './useSimulation';
 const VIEW_HASHES: Record<SimView, string> = {
   reactor: '#/reactor',
   turbine: '#/turbina',
+  store: '#/tienda',
 };
 
-const getViewFromHash = (hash: string): SimView =>
-  hash.includes('turbina') ? 'turbine' : 'reactor';
+const getViewFromHash = (hash: string): SimView => {
+  if (hash.includes('turbina')) return 'turbine';
+  if (hash.includes('tienda')) return 'store';
+  return 'reactor';
+};
 
 export default function App() {
   const { sim, notices, dismissNotice, actions } = useSimulation();
@@ -130,11 +135,15 @@ export default function App() {
   const pageTitle =
     activeView === 'reactor'
       ? 'Página del reactor'
-      : 'Página de la turbina';
+      : activeView === 'turbine'
+      ? 'Página de la turbina'
+      : 'Tienda de Mejoras';
   const pageSubtitle =
     activeView === 'reactor'
       ? 'Operación del núcleo, contención, agua, química y detectores.'
-      : 'Conversión térmica a potencia eléctrica, rotor, generador y secundario.';
+      : activeView === 'turbine'
+      ? 'Conversión térmica a potencia eléctrica, rotor, generador y secundario.'
+      : 'Mejoras permanentes para optimizar la eficiencia y seguridad de la planta.';
 
   return (
     <div className="min-h-screen bg-transparent px-4 py-5 text-slate-100 md:px-6 xl:px-8">
@@ -281,7 +290,7 @@ export default function App() {
 
         <nav className="panel-glass sticky top-4 z-20 rounded-[30px] border border-slate-800/80 px-4 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-3">
               <button
                 onClick={() => changeView('reactor')}
                 className={`rounded-[24px] border px-4 py-4 text-left transition ${
@@ -313,6 +322,23 @@ export default function App() {
                 </div>
                 <p className="mt-2 text-sm text-slate-300">
                   Rotor, generador, secundario y aprovechamiento del calor útil.
+                </p>
+              </button>
+
+              <button
+                onClick={() => changeView('store')}
+                className={`rounded-[24px] border px-4 py-4 text-left transition ${
+                  activeView === 'store'
+                    ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-50'
+                    : 'border-slate-800/80 bg-slate-950/60 text-slate-200 hover:border-slate-700 hover:bg-slate-900/60'
+                }`}
+              >
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.26em] text-slate-400">
+                  <span className="text-emerald-300">✦</span>
+                  Tienda
+                </div>
+                <p className="mt-2 text-sm text-slate-300">
+                  Adquiere mejoras permanentes de hasta nivel 5.
                 </p>
               </button>
             </div>
@@ -348,7 +374,7 @@ export default function App() {
                 onToggleRadiationShield={actions.toggleRadiationShield}
                 onRepairShields={actions.repairShields}
               />
-            ) : (
+            ) : activeView === 'turbine' ? (
               <TurbinePage
                 sim={sim}
                 alerts={turbineAlerts}
@@ -356,6 +382,11 @@ export default function App() {
                 onSetSteamValve={actions.setSteamValve}
                 onRepairPump={actions.repairPump}                onServiceTurbine={actions.serviceTurbine}
                 onPerformMaintenance={actions.performMaintenance}
+              />
+            ) : (
+              <StorePage
+                sim={sim}
+                onBuyUpgrade={actions.buyUpgrade}
               />
             )}
           </main>
