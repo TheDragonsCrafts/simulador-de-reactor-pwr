@@ -1106,7 +1106,7 @@ export const getOverclockBlockers = (state: SimulationState) => {
   if (state.gameState === 'SCRAMMED') blockers.push('el reactor está en SCRAM');
   if (state.overclockTicks > 0) blockers.push('ya hay un pulso activo');
   if (state.overclockCooldown > 0) {
-    blockers.push(`faltan ${state.overclockCooldown}s de cooldown`);
+    blockers.push(`faltan ${Math.ceil(state.overclockCooldown)}s de cooldown`);
   }
   if (state.controlRods > 82) blockers.push('las barras siguen demasiado insertadas');
   if (!state.primaryPumpActive || state.primaryPumpFlow < 80) {
@@ -1606,10 +1606,10 @@ function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
   next.coolantLevel = clamp(next.coolantLevel, 0, 100);
 
   if (next.overclockTicks > 0) {
-    next.overclockTicks -= dt;
+    next.overclockTicks = Math.max(0, next.overclockTicks - dt);
   }
   if (next.overclockCooldown > 0) {
-    next.overclockCooldown -= dt;
+    next.overclockCooldown = Math.max(0, next.overclockCooldown - dt);
   }
 
   next.sprayReserve = clamp(
