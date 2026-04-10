@@ -385,7 +385,7 @@ export const createInitialState = (): SimulationState => ({
   overclockTicks: 0,
   overclockCooldown: 0,
   marketDemand: 50,
-  marketPrice: 60,
+  marketPrice: 850,
   upgrades: {
     rods: 0,
     pumps: 0,
