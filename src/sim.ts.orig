@@ -457,35 +457,34 @@ export const buildDetectors = (sim: SimulationState): DetectorReading[] => {
   ];
 
   // Apply shield reduction & redistribution
-  const shieldedValues = new Array(4);
-  let totalBlocked = 0;
-  let unshieldedCount = 0;
-
-  for (let i = 0; i < 4; i++) {
-    const raw = rawValues[i];
+  const shieldedValues = rawValues.map((raw, i) => {
     if (sim.radiationShields[i]) {
       const efficiency = (sim.shieldEfficiency[i] / 100);
-      const reduction = SHIELD_MAX_REDUCTION * efficiency;
-      shieldedValues[i] = raw * (1 - reduction);
-      totalBlocked += raw * reduction;
-    } else {
-      shieldedValues[i] = raw;
-      unshieldedCount++;
+      return raw * (1 - SHIELD_MAX_REDUCTION * efficiency);
     }
-  }
+    return raw;
+  });
 
+  // Compute total blocked radiation and redistribute to unshielded zones
+  const totalBlocked = rawValues.reduce((sum, raw, i) => {
+    if (sim.radiationShields[i]) {
+      const efficiency = (sim.shieldEfficiency[i] / 100);
+      return sum + raw * SHIELD_MAX_REDUCTION * efficiency;
+    }
+    return sum;
+  }, 0);
+
+  const unshieldedCount = sim.radiationShields.filter((s) => !s).length;
   const redistributionPerZone = unshieldedCount > 0
     ? (totalBlocked * SHIELD_REDISTRIBUTION) / unshieldedCount
     : 0;
 
-  const finalValues = new Array(4);
-  for (let i = 0; i < 4; i++) {
+  const finalValues = shieldedValues.map((val, i) => {
     if (!sim.radiationShields[i] && unshieldedCount > 0) {
-      finalValues[i] = clamp(shieldedValues[i] + redistributionPerZone, 0, 240);
-    } else {
-      finalValues[i] = shieldedValues[i];
+      return clamp(val + redistributionPerZone, 0, 240);
     }
-  }
+    return val;
+  });
 
   return [
     { label: 'DET-A', zone: 'Anillo superior', value: finalValues[0] },
@@ -1506,7 +1505,7 @@ function updateDamageAndRadiation(next: SimulationState, dt: number) {
   );
 }
 
-function calculateElectricalOutput(next: SimulationState, dt: number, exportPrice: number) {
+function calculateElectricalOutput(next: SimulationState, dt: number) {
   const coolantProfile = getCoolantProfile(next.coolantProfile);
   const overclockActive = next.overclockTicks > 0;
   const coolantMassFactor = clamp(next.coolantLevel / 100, 0, 1);
@@ -1549,7 +1548,7 @@ function calculateElectricalOutput(next: SimulationState, dt: number, exportPric
 
   const energyThisTick = (next.powerOutput / 3600) * dt;
   next.energyGenerated += energyThisTick;
-  next.funds += energyThisTick * exportPrice - (coolantProfile.upkeepPerTick * dt);
+  next.funds += energyThisTick * computeExportPrice(next) - (coolantProfile.upkeepPerTick * dt);
 }
 
 function updateChemistryAndMaintenance(next: SimulationState, dt: number) {
@@ -1911,9 +1910,9 @@ function updateEconomy(next: SimulationState, dt: number) {
   const cyclePhase = (next.energyGenerated * 0.05) % (Math.PI * 2);
   const sineFluctuation = Math.sin(cyclePhase) * 150; // +- 150 fluctuation
   const noise = (Math.random() - 0.5) * 20; // noise
-  
+
   next.marketPrice = clamp(basePrice + sineFluctuation + noise, 200, 1500);
-  
+
   const baseDemand = 50;
   const demandSine = Math.cos(cyclePhase * 0.8) * 30; // slightly different phase
   next.marketDemand = clamp(baseDemand + demandSine + noise, 0, 100);
@@ -1929,8 +1928,6 @@ export const advanceSimulation = (
   const SUBTICKS = 10;
   const dt = 1.0 / SUBTICKS;
 
-  const exportPrice = computeExportPrice(next);
-
   for (let i = 0; i < SUBTICKS; i++) {
     if (isTerminalState(next)) break;
 
@@ -1938,7 +1935,7 @@ export const advanceSimulation = (
     calculateReactivityDynamics(next, dt);
     updateThermalDynamics(next, dt);
     updateDamageAndRadiation(next, dt);
-    calculateElectricalOutput(next, dt, exportPrice);
+    calculateElectricalOutput(next, dt);
     updateChemistryAndMaintenance(next, dt);
     updateEconomy(next, dt);
 
