@@ -275,11 +275,11 @@ export const computeExportPrice = (state: SimulationState) => {
   const coolant = getCoolantProfile(state.coolantProfile);
 
   let price = state.marketPrice;
-  if (state.powerOutput > 240) price += 16;
-  if (state.powerOutput > 340) price += 18;
-  if (state.turbineEfficiency > 88) price += 14;
-  if (state.overclockTicks > 0) price += 38;
-  if (coolant.id === 'turbosteam') price += 12;
+  if (state.powerOutput > 240) price += 40;
+  if (state.powerOutput > 340) price += 60;
+  if (state.turbineEfficiency > 88) price += 45;
+  if (state.overclockTicks > 0) price += 120;
+  if (coolant.id === 'turbosteam') price += 25;
   if (coolant.id === 'shieldx') price -= 8;
 
   // Clean plant bonus: all detectors below threshold
@@ -1319,7 +1319,7 @@ function calculateReactivityDynamics(next: SimulationState, dt: number) {
   const promptPowerTarget = clamp(
     next.neutronFlux * 7.6 +
       next.reactivity * 220 +
-      (overclockActive ? Math.max(340, next.thermalPower * 0.68) : 0),
+      (overclockActive ? Math.max(450, next.thermalPower * 0.75) : 0),
     0,
     1600,
   );
@@ -1536,7 +1536,7 @@ function calculateElectricalOutput(next: SimulationState, dt: number) {
           0,
           next.thermalPower *
             electricalEfficiency *
-            (overclockActive ? 1.34 * coolantProfile.overclockFactor : 1) *
+            (overclockActive ? 1.6 * coolantProfile.overclockFactor : 1) *
             energyGenerationMultiplier,
         )
       : 0;
@@ -1906,12 +1906,12 @@ function evaluateEvents(
 }
 
 function updateEconomy(next: SimulationState, dt: number) {
-  const basePrice = 145;
+  const basePrice = 850;
   const cyclePhase = (next.energyGenerated * 0.05) % (Math.PI * 2);
-  const sineFluctuation = Math.sin(cyclePhase) * 40; // +- 40 fluctuation
-  const noise = (Math.random() - 0.5) * 5; // small noise
+  const sineFluctuation = Math.sin(cyclePhase) * 150; // +- 150 fluctuation
+  const noise = (Math.random() - 0.5) * 20; // noise
   
-  next.marketPrice = clamp(basePrice + sineFluctuation + noise, 30, 300);
+  next.marketPrice = clamp(basePrice + sineFluctuation + noise, 200, 1500);
   
   const baseDemand = 50;
   const demandSine = Math.cos(cyclePhase * 0.8) * 30; // slightly different phase
