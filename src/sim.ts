@@ -769,9 +769,10 @@ export const buildAlerts = (sim: SimulationState): AlertItem[] => {
     });
   }
 
+  const detectors = buildDetectors(sim);
+
   if (activeShields > 0 && activeShields < 4) {
     const unshielded = 4 - activeShields;
-    const detectors = buildDetectors(sim);
     const maxUnshielded = Math.max(
       ...detectors.filter((_, i) => !sim.radiationShields[i]).map((d) => d.value),
     );
@@ -785,7 +786,6 @@ export const buildAlerts = (sim: SimulationState): AlertItem[] => {
     }
   }
 
-  const detectors = buildDetectors(sim);
   if (isCleanPlant(detectors)) {
     pushAlert(alerts, {
       area: 'shared',
