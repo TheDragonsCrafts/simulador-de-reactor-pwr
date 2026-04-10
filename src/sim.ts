@@ -497,10 +497,13 @@ export const buildDetectors = (sim: SimulationState): DetectorReading[] => {
 export const computeRiskIndex = (sim: SimulationState) => {
   if (isTerminalState(sim)) return 100;
 
+  const effectiveMaxTemp = MAX_TEMP + (sim.upgrades?.maxTemp || 0) * 80;
+  const effectiveMaxPressure = MAX_PRESSURE + (sim.upgrades?.maxPressure || 0) * 2;
+
   const temperatureRisk =
-    clamp((sim.coreTemp - 300) / (MAX_TEMP - 300), 0, 1) * 26;
+    clamp((sim.coreTemp - 300) / (effectiveMaxTemp - 300), 0, 1) * 26;
   const pressureRisk =
-    clamp((sim.pressure - 15) / (MAX_PRESSURE - 15), 0, 1) * 18;
+    clamp((sim.pressure - 15) / (effectiveMaxPressure - 15), 0, 1) * 18;
   const radiationRisk = clamp(sim.radiationLevel / 130, 0, 1) * 16;
   const containmentRisk =
     clamp((100 - sim.containmentIntegrity) / 100, 0, 1) * 12;
