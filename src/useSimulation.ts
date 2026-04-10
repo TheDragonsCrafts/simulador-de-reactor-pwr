@@ -6,6 +6,7 @@ import {
   OVERCLOCK_COOLDOWN,
   OVERCLOCK_DURATION,
   PRIMARY_PUMP_MAX_DEMAND,
+  SHIELD_ACTIVATION_COST,
   SHIELD_REPAIR_COST,
   TICK_RATE,
   advanceSimulation,
@@ -567,20 +568,36 @@ export function useSimulation() {
   const toggleRadiationShield = (zone: number) => {
     transact((draft, helpers) => {
       if (zone < 0 || zone > 3) return;
+      const willTurnOn = !draft.radiationShields[zone];
+
+      if (willTurnOn && draft.funds < SHIELD_ACTIVATION_COST) {
+        helpers.addNotice(
+          'warning',
+          'Fondos insuficientes',
+          `Activar un escudo cuesta $${SHIELD_ACTIVATION_COST.toLocaleString('es-MX')}.`,
+        );
+        return;
+      }
+
       draft.radiationShields = [...draft.radiationShields];
-      draft.radiationShields[zone] = !draft.radiationShields[zone];
+      draft.radiationShields[zone] = willTurnOn;
+
+      if (willTurnOn) {
+        draft.funds -= SHIELD_ACTIVATION_COST;
+      }
+
       const zoneNames = ['Anillo superior', 'Blindaje oeste', 'Canal de vapor', 'Edificio de turbina'];
-      const state = draft.radiationShields[zone] ? 'activado' : 'desactivado';
+      const state = willTurnOn ? 'activado' : 'desactivado';
       helpers.addLog(
-        draft.radiationShields[zone] ? 'INFO' : 'WARN',
+        willTurnOn ? 'INFO' : 'WARN',
         `Escudo de blindaje ${zoneNames[zone]} ${state}.`,
       );
       helpers.addNotice(
-        draft.radiationShields[zone] ? 'info' : 'info',
+        willTurnOn ? 'info' : 'info',
         `Blindaje ${state}`,
-        draft.radiationShields[zone]
-          ? `Zona ${zoneNames[zone]} protegida. Costo: $80/s. La radiación bloqueada se redistribuirá a zonas sin escudo.`
-          : `Zona ${zoneNames[zone]} expuesta. Ya no consume fondos por blindaje.`,
+        willTurnOn
+          ? `Zona ${zoneNames[zone]} protegida. La radiación bloqueada se redistribuirá a zonas sin escudo.`
+          : `Zona ${zoneNames[zone]} expuesta.`,
       );
     });
   };
@@ -668,18 +685,28 @@ export function useSimulation() {
   };
 
   const buyUpgrade = (upgradeId: keyof SimulationState['upgrades']) => {
-    const costs: Record<keyof SimulationState['upgrades'], number> = {
-      fastRods: 8000,
-      heavyPumps: 12000,
-      betterInsulation: 10000,
-    };
-    
     transact((draft, helpers) => {
-      const cost = costs[upgradeId];
-      if (draft.upgrades[upgradeId]) {
-         helpers.addNotice('info', 'Mejora ya adquirida', 'Ya tienes esta mejora instalada.');
+      const currentLevel = draft.upgrades[upgradeId] || 0;
+      if (currentLevel >= 5) {
+         helpers.addNotice('info', 'Mejora al máximo', 'Esta mejora ya alcanzó su nivel máximo (5).');
          return;
       }
+
+      const baseCosts: Record<keyof SimulationState['upgrades'], number> = {
+        rods: 8000,
+        pumps: 12000,
+        insulation: 10000,
+        radiation: 15000,
+        security: 14000,
+        maxTemp: 20000,
+        maxPressure: 18000,
+        energyGeneration: 25000,
+        turbines: 12000,
+        generator: 16000,
+      };
+
+      const cost = baseCosts[upgradeId] * Math.pow(1.5, currentLevel);
+
       if (draft.funds < cost) {
          helpers.addNotice('warning', 'Fondos insuficientes', `Esta mejora cuesta $${cost.toLocaleString('es-MX')}.`);
          return;
@@ -687,8 +714,8 @@ export function useSimulation() {
       
       draft.funds -= cost;
       draft.upgrades = { ...draft.upgrades };
-      draft.upgrades[upgradeId] = true;
-      helpers.addLog('INFO', `Mejora adquirida: ${String(upgradeId)}.`);
+      draft.upgrades[upgradeId] = currentLevel + 1;
+      helpers.addLog('INFO', `Mejora adquirida: ${String(upgradeId)} nivel ${currentLevel + 1}.`);
       helpers.addNotice('success', 'Mejora instalada', 'La mejora ya está operativa en la planta.');
     });
   };

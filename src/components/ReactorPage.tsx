@@ -21,7 +21,7 @@ import {
 import {
   COOLANT_PROFILES,
   SHIELD_ZONES,
-  SHIELD_COST_PER_TICK,
+  SHIELD_ACTIVATION_COST,
   SHIELD_REPAIR_COST,
   CLEAN_PLANT_THRESHOLD,
   CLEAN_PLANT_BONUS,
@@ -1093,7 +1093,7 @@ export function ReactorPage({
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full border border-slate-800/70 bg-slate-950/80 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-slate-400">
-                  ${SHIELD_COST_PER_TICK}/s por escudo
+                  ${SHIELD_ACTIVATION_COST.toLocaleString('es-MX')} por escudo
                 </span>
               </div>
             </div>
@@ -1168,11 +1168,6 @@ export function ReactorPage({
               </button>
               <div className="flex items-center gap-2 rounded-2xl border border-slate-800/70 bg-slate-950/60 px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-slate-500">
                 Activos: {sim.radiationShields.filter(Boolean).length}/4
-                {sim.radiationShields.filter(Boolean).length > 0 && (
-                  <span className="text-amber-300">
-                    -${(sim.radiationShields.filter(Boolean).length * SHIELD_COST_PER_TICK).toLocaleString('es-MX')}/s
-                  </span>
-                )}
               </div>
             </div>
           </div>

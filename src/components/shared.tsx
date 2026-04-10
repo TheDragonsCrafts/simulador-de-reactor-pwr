@@ -29,7 +29,6 @@ import {
   getCoolantProfile,
   isCleanPlant,
   CLEAN_PLANT_BONUS,
-  SHIELD_COST_PER_TICK,
   type AlertItem,
   type AlertSeverity,
   type FissionState,
@@ -802,11 +801,6 @@ export function MonitorSidebar({
               </div>
             ))}
           </div>
-          {sim.radiationShields.filter(Boolean).length > 0 && (
-            <div className="mt-2 text-[10px] uppercase tracking-[0.22em] text-amber-300/80">
-              costo: -${(sim.radiationShields.filter(Boolean).length * SHIELD_COST_PER_TICK).toLocaleString('es-MX')}/s
-            </div>
-          )}
           {(() => {
             const dets = buildDetectors(sim);
             return isCleanPlant(dets) ? (
@@ -998,88 +992,6 @@ export function MonitorSidebar({
         </div>
       </div>
 
-      <div className="panel-glass rounded-[30px] border border-slate-800/80 p-5">
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-slate-400">
-            <Wrench className="h-4 w-4 text-cyan-300" />
-            Mejoras de Planta
-          </div>
-          <span className="rounded-full border border-slate-800/70 bg-slate-950/70 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-slate-400">
-            permanentes
-          </span>
-        </div>
-
-        <div className="grid gap-3">
-          <div className={`rounded-2xl border p-4 transition-all duration-300 ${sim.upgrades.fastRods ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-800/70 bg-slate-950/70'}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-slate-200">Mecanismos Rápidos</div>
-                <div className="mt-1 text-xs text-slate-400 leading-relaxed">
-                  Los motores de las barras de control se mueven al doble de velocidad. Útil para reaccionar rápido a transitorios.
-                </div>
-              </div>
-              {sim.upgrades.fastRods ? (
-                <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-emerald-300">
-                  Instalada
-                </span>
-              ) : (
-                <button
-                  onClick={() => onBuyUpgrade('fastRods')}
-                  className="shrink-0 rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                >
-                  $8,000
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className={`rounded-2xl border p-4 transition-all duration-300 ${sim.upgrades.heavyPumps ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-800/70 bg-slate-950/70'}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-slate-200">Bombas Reforzadas</div>
-                <div className="mt-1 text-xs text-slate-400 leading-relaxed">
-                  Las bombas primarias sufren 50% menos desgaste mecánico, incluso en sobreimpulso constante.
-                </div>
-              </div>
-              {sim.upgrades.heavyPumps ? (
-                <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-emerald-300">
-                  Instalada
-                </span>
-              ) : (
-                <button
-                  onClick={() => onBuyUpgrade('heavyPumps')}
-                  className="shrink-0 rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                >
-                  $12,000
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className={`rounded-2xl border p-4 transition-all duration-300 ${sim.upgrades.betterInsulation ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-800/70 bg-slate-950/70'}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-slate-200">Aislamiento Térmico</div>
-                <div className="mt-1 text-xs text-slate-400 leading-relaxed">
-                  Reduce un 50% las pérdidas térmicas en caso de fuga o degradación de la contención, manteniendo el T en banda.
-                </div>
-              </div>
-              {sim.upgrades.betterInsulation ? (
-                <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-emerald-300">
-                  Instalada
-                </span>
-              ) : (
-                <button
-                  onClick={() => onBuyUpgrade('betterInsulation')}
-                  className="shrink-0 rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                >
-                  $10,000
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

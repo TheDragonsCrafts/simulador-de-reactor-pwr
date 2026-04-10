@@ -9,7 +9,7 @@ export const PRIMARY_PUMP_MAX_DEMAND = 112;
 export const OVERCLOCK_DURATION = 12;
 export const OVERCLOCK_COOLDOWN = 48;
 
-export const SHIELD_COST_PER_TICK = 80;
+export const SHIELD_ACTIVATION_COST = 5000;
 export const SHIELD_REPAIR_COST = 2500;
 export const SHIELD_MAX_REDUCTION = 0.45;
 export const SHIELD_REDISTRIBUTION = 0.15;
