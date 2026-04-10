@@ -773,10 +773,21 @@ export const buildAlerts = (sim: SimulationState): AlertItem[] => {
   }
 
   // Shield alerts
-  const activeShields = sim.radiationShields.filter(Boolean).length;
-  const avgShieldEff = activeShields > 0
-    ? sim.shieldEfficiency.reduce((sum, e, i) => sim.radiationShields[i] ? sum + e : sum, 0) / activeShields
-    : 0;
+  const detectors = buildDetectors(sim);
+  let activeShields = 0;
+  let totalShieldEff = 0;
+  let maxUnshielded = -Infinity;
+
+  for (let i = 0; i < sim.radiationShields.length; i++) {
+    if (sim.radiationShields[i]) {
+      activeShields++;
+      totalShieldEff += sim.shieldEfficiency[i];
+    } else if (detectors[i].value > maxUnshielded) {
+      maxUnshielded = detectors[i].value;
+    }
+  }
+
+  const avgShieldEff = activeShields > 0 ? totalShieldEff / activeShields : 0;
 
   if (activeShields > 0 && avgShieldEff < 40) {
     pushAlert(alerts, {
@@ -787,13 +798,8 @@ export const buildAlerts = (sim: SimulationState): AlertItem[] => {
     });
   }
 
-  const detectors = buildDetectors(sim);
-
   if (activeShields > 0 && activeShields < 4) {
     const unshielded = 4 - activeShields;
-    const maxUnshielded = Math.max(
-      ...detectors.filter((_, i) => !sim.radiationShields[i]).map((d) => d.value),
-    );
     if (maxUnshielded > 25) {
       pushAlert(alerts, {
         area: 'reactor',
