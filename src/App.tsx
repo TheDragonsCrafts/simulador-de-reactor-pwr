@@ -58,8 +58,44 @@ export default function App() {
       window.history.replaceState(null, '', VIEW_HASHES.reactor);
     }
 
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      const isGameOver = sim.gameState === 'MELTDOWN' || sim.gameState === 'EXPLOSION';
+      if (isGameOver) return;
+
+      switch(e.code) {
+        case 'Space':
+          e.preventDefault();
+          actions.scram();
+          break;
+        case 'KeyP':
+          e.preventDefault();
+          actions.togglePrimaryPump();
+          break;
+        case 'KeyS':
+          e.preventDefault();
+          actions.toggleSecondaryPump();
+          break;
+        case 'KeyB':
+          e.preventDefault();
+          actions.injectBoron();
+          break;
+        case 'KeyO':
+          e.preventDefault();
+          actions.triggerOverclock();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [actions, sim.gameState]);
 
   const changeView = (view: SimView) => {
     setActiveView(view);

@@ -625,9 +625,10 @@ export function ReactorPage({
                         sim.primaryPumpActive
                           ? 'border-sky-500/40 bg-sky-500/10 text-sky-200'
                           : 'border-slate-700 bg-slate-900 text-slate-400'
-                      } disabled:cursor-not-allowed disabled:opacity-50`}
+                      } disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1`}
                     >
                       {sim.primaryPumpActive ? 'ON' : 'OFF'}
+                      <span className="hidden opacity-50 sm:inline-block ml-1">[P]</span>
                     </button>
                   </div>
                 </div>
@@ -786,7 +787,7 @@ export function ReactorPage({
                     className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/40 bg-rose-500/12 px-4 py-3 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Zap className="h-4 w-4" />
-                    Activar overclock
+                    Activar overclock <span className="opacity-50 text-xs ml-1">[O]</span>
                   </button>
                 </div>
 
@@ -945,9 +946,12 @@ export function ReactorPage({
                 disabled={isGameOver}
                 className="rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-left transition hover:border-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-slate-200">
-                  <FlaskConical className="h-4 w-4 text-indigo-300" />
-                  Inyección de boro
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-slate-200">
+                    <FlaskConical className="h-4 w-4 text-indigo-300" />
+                    Inyección de boro
+                  </div>
+                  <span className="text-[10px] text-slate-500 opacity-60">[B]</span>
                 </div>
                 <p className="mt-2 text-xs text-slate-400">
                   Inserta margen negativo de reactividad.
@@ -999,7 +1003,7 @@ export function ReactorPage({
               className="flex items-center justify-center gap-2 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShieldAlert className="h-4 w-4" />
-              SCRAM de emergencia
+              SCRAM de emergencia <span className="opacity-50 text-xs ml-1">[ESPACIO]</span>
             </button>
           </div>
         </div>

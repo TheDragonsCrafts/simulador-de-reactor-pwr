@@ -385,15 +385,18 @@ export function TurbinePage({
                     : 'border-slate-800 bg-slate-950/60 text-slate-200 hover:border-slate-700'
                 } disabled:cursor-not-allowed disabled:opacity-50`}
               >
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em]">
-                  <RefreshCw
-                    className={`h-4 w-4 ${
-                      sim.secondaryPumpActive && sim.secondaryPumpHealth > 0
-                        ? 'animate-spin'
-                        : ''
-                    }`}
-                  />
-                  Bomba secundaria
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em]">
+                    <RefreshCw
+                      className={`h-4 w-4 ${
+                        sim.secondaryPumpActive && sim.secondaryPumpHealth > 0
+                          ? 'animate-spin'
+                          : ''
+                      }`}
+                    />
+                    Bomba secundaria
+                  </div>
+                  <span className="text-[10px] text-slate-500 opacity-60">[S]</span>
                 </div>
                 <p className="mt-2 text-xs text-slate-400">
                   Enciende o reduce el caudal útil que alimenta a la turbina.

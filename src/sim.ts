@@ -291,6 +291,7 @@ export const cloneState = (state: SimulationState): SimulationState => ({
   radiationShields: [...state.radiationShields],
   shieldEfficiency: [...state.shieldEfficiency],
   shieldActiveSeconds: [...state.shieldActiveSeconds],
+  upgrades: { ...state.upgrades },
   history: {
     temp: [...state.history.temp],
     pressure: [...state.history.pressure],
