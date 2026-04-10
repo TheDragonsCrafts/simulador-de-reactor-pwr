@@ -1,0 +1,5 @@
+{
+  "name": "Simulador de Reactor PWR",
+  "description": "Un simulador interactivo de un reactor nuclear de agua a presión (PWR). Controla las barras, bombas y mantén el núcleo estable.",
+  "requestFramePermissions": []
+}

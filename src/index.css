@@ -1,0 +1,638 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --hud-border: rgba(51, 65, 85, 0.72);
+  --hud-glow: rgba(14, 165, 233, 0.12);
+  --panel-bg-top: rgba(15, 23, 42, 0.88);
+  --panel-bg-bottom: rgba(2, 6, 23, 0.86);
+  --rad-green: #4ade80;
+  --rad-amber: #fbbf24;
+  --rad-red: #f43f5e;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(34, 211, 238, 0.1), transparent 26%),
+    radial-gradient(circle at 82% 0%, rgba(56, 189, 248, 0.1), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.06), transparent 32%),
+    linear-gradient(180deg, #020617 0%, #02040b 38%, #010308 100%);
+  color: #e2e8f0;
+  font-family:
+    "Inter",
+    "IBM Plex Mono",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+/* Monospace for data & readings */
+.font-mono {
+  font-family: "JetBrains Mono", "IBM Plex Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.25);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.45);
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(2, 6, 23, 0.55);
+}
+
+/* ─── Panels ─── */
+
+.panel-glass {
+  background:
+    linear-gradient(180deg, var(--panel-bg-top) 0%, var(--panel-bg-bottom) 100%);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 184, 0.06),
+    0 24px 80px rgba(2, 6, 23, 0.45);
+  transition:
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    transform 220ms ease;
+}
+
+.panel-glass:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 184, 0.08),
+    0 30px 100px rgba(2, 6, 23, 0.48);
+}
+
+/* ─── Grid Backgrounds ─── */
+
+.hud-grid {
+  background-image:
+    linear-gradient(rgba(51, 65, 85, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(51, 65, 85, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.reactor-shell {
+  background:
+    radial-gradient(circle at center, rgba(6, 182, 212, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.98) 0%, rgba(15, 23, 42, 0.96) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(34, 211, 238, 0.06),
+    inset 0 0 65px rgba(8, 47, 73, 0.45),
+    0 30px 90px rgba(2, 6, 23, 0.52);
+}
+
+.reactor-schematic {
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at center, rgba(14, 165, 233, 0.12), transparent 55%);
+  background-size: 24px 24px, 24px 24px, auto;
+}
+
+.status-ring {
+  background:
+    radial-gradient(circle at center, rgba(14, 165, 233, 0.16), transparent 60%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(15, 23, 42, 0.82) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(56, 189, 248, 0.08),
+    0 0 34px rgba(14, 165, 233, 0.09);
+}
+
+.turbine-panel {
+  background:
+    radial-gradient(circle at 18% 24%, rgba(56, 189, 248, 0.08), transparent 26%),
+    radial-gradient(circle at 82% 30%, rgba(52, 211, 153, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(15, 23, 42, 0.82) 100%);
+}
+
+/* ─── CRT Scanline Overlay ─── */
+
+.crt-overlay {
+  pointer-events: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.crt-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: scanlineScroll 8s linear infinite;
+}
+
+/* ─── Animations ─── */
+
+.reactor-ring {
+  animation: reactorPulse 3.8s ease-in-out infinite;
+}
+
+.radiation-particle {
+  animation-name: particleDrift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.neutron-orbit {
+  animation: orbitSpin linear infinite;
+  transform-origin: center;
+  transform: scale(var(--orbit-scale, 1)) rotate(var(--orbit-tilt, 0deg));
+  will-change: transform;
+}
+
+.neutron-node {
+  box-shadow: 0 0 18px rgba(125, 211, 252, 0.5);
+  animation: neutronBlink 1.8s ease-in-out infinite;
+}
+
+.turbine-stack {
+  box-shadow:
+    inset 0 0 0 1px rgba(56, 189, 248, 0.08),
+    0 0 40px rgba(14, 165, 233, 0.08);
+}
+
+.turbine-rotor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: turbineSpin var(--turbine-speed, 3s) linear infinite;
+  transform-origin: center center;
+  transform-box: fill-box;
+  will-change: transform;
+  isolation: isolate;
+}
+
+.turbine-rotor > svg {
+  display: block;
+  overflow: visible;
+}
+
+.steam-stream {
+  animation: steamFlow linear infinite;
+  filter: blur(1px);
+}
+
+.steam-pulse {
+  animation: linePulse linear infinite;
+  filter: blur(0.8px);
+  will-change: transform, opacity;
+}
+
+.release-plume {
+  animation: ventRelease ease-out infinite;
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+
+.breach-jet {
+  animation: breachLeak ease-in-out infinite;
+  filter: blur(1.4px);
+  mix-blend-mode: screen;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.generator-core {
+  animation: generatorPulse 2.6s ease-in-out infinite;
+}
+
+/* ─── Radiation Glow Pulse ─── */
+
+.rad-glow-green {
+  animation: radGlowPulse 2.2s ease-in-out infinite;
+  --rad-glow-color: rgba(74, 222, 128, 0.5);
+}
+
+.rad-glow-amber {
+  animation: radGlowPulse 1.6s ease-in-out infinite;
+  --rad-glow-color: rgba(251, 191, 36, 0.6);
+}
+
+.rad-glow-red {
+  animation: radGlowPulse 0.9s ease-in-out infinite;
+  --rad-glow-color: rgba(244, 63, 94, 0.65);
+}
+
+/* ─── Radiation Shield Effect ─── */
+
+.shield-active {
+  position: relative;
+  overflow: hidden;
+}
+
+.shield-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.06) 0%,
+    transparent 40%,
+    rgba(56, 189, 248, 0.04) 60%,
+    transparent 100%
+  );
+  animation: shieldShimmer 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* ─── Geiger Counter Bar ─── */
+
+.geiger-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.geiger-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  animation: geigerSweep var(--geiger-speed, 2s) ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+
+/* ─── Radiation Haze ─── */
+
+.radiation-haze {
+  position: relative;
+}
+
+.radiation-haze::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(34, 211, 238, var(--haze-opacity, 0)) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: hazeFlicker 4s ease-in-out infinite;
+  border-radius: inherit;
+  z-index: 2;
+}
+
+/* ─── Radiation Wave (concentric expanding rings) ─── */
+
+.rad-wave {
+  animation: radiationWave var(--wave-duration, 3s) ease-out infinite;
+  opacity: 0;
+}
+
+/* ─── Floating Background Particles ─── */
+
+.bg-particle {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: floatingParticle var(--particle-duration, 20s) linear infinite;
+  opacity: var(--particle-opacity, 0.15);
+  will-change: transform;
+}
+
+/* ─── Controls ─── */
+
+.control-slider {
+  appearance: none;
+  height: 0.75rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(248, 113, 113, 0.45) 0%, rgba(56, 189, 248, 0.45) 55%, rgba(16, 185, 129, 0.45) 100%);
+  outline: none;
+}
+
+.control-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid rgba(14, 165, 233, 0.85);
+  background: #e0f2fe;
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
+  cursor: pointer;
+  transition: box-shadow 150ms ease;
+}
+
+.control-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.55);
+}
+
+.control-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid rgba(14, 165, 233, 0.85);
+  background: #e0f2fe;
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .panel-glass:hover {
+    transform: none;
+  }
+}
+
+/* ─── Keyframes ─── */
+
+@keyframes reactorPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.22;
+  }
+  55% {
+    transform: scale(1.08);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+
+@keyframes particleDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.8);
+  }
+  50% {
+    transform: translate3d(8px, -18px, 0) scale(1.15);
+  }
+  100% {
+    transform: translate3d(-6px, -34px, 0) scale(0.7);
+  }
+}
+
+@keyframes orbitSpin {
+  0% {
+    transform: scale(var(--orbit-scale, 1)) rotate(var(--orbit-tilt, 0deg));
+  }
+  100% {
+    transform: scale(var(--orbit-scale, 1)) rotate(calc(var(--orbit-tilt, 0deg) + 360deg));
+  }
+}
+
+@keyframes neutronBlink {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes turbineSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes steamFlow {
+  0% {
+    transform: translateX(-18%) scaleX(0.88);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(185%) scaleX(1.18);
+    opacity: 0;
+  }
+}
+
+@keyframes linePulse {
+  0% {
+    transform: translateX(-12%) scaleX(0.82);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.78;
+  }
+  100% {
+    transform: translateX(180%) scaleX(1.12);
+    opacity: 0;
+  }
+}
+
+@keyframes ventRelease {
+  0% {
+    transform: translate(-50%, 0) scale(var(--plume-scale, 1));
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate(-50%, calc(var(--plume-rise, 14px) * -1)) scale(calc(var(--plume-scale, 1) + 0.18));
+    opacity: 0;
+  }
+}
+
+@keyframes breachLeak {
+  0% {
+    transform: var(--jet-transform, none) translateX(0) scale(0.88);
+    opacity: 0.08;
+  }
+  35% {
+    opacity: 0.72;
+  }
+  100% {
+    transform: var(--jet-transform, none) translateX(8px) scale(1.12);
+    opacity: 0;
+  }
+}
+
+@keyframes generatorPulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(52, 211, 153, 0.15),
+      0 0 0 rgba(52, 211, 153, 0.1);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(52, 211, 153, 0.3),
+      0 0 28px rgba(52, 211, 153, 0.22);
+  }
+}
+
+@keyframes radGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px var(--rad-glow-color, rgba(74, 222, 128, 0.3));
+  }
+  50% {
+    box-shadow: 0 0 22px var(--rad-glow-color, rgba(74, 222, 128, 0.6)),
+                0 0 44px var(--rad-glow-color, rgba(74, 222, 128, 0.2));
+  }
+}
+
+@keyframes shieldShimmer {
+  0% {
+    opacity: 0.3;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes geigerSweep {
+  0% {
+    left: -3px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes radiationWave {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes floatingParticle {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(30px, -60px, 0) rotate(90deg);
+  }
+  50% {
+    transform: translate3d(-20px, -120px, 0) rotate(180deg);
+  }
+  75% {
+    transform: translate3d(40px, -180px, 0) rotate(270deg);
+  }
+  100% {
+    transform: translate3d(0, -240px, 0) rotate(360deg);
+  }
+}
+
+@keyframes hazeFlicker {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 0.7;
+  }
+  60% {
+    opacity: 0.4;
+  }
+  80% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes scanlineScroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+@keyframes bubbleRise {
+  0% { transform: translateY(20px) scale(0.5); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.7; }
+  100% { transform: translateY(calc(-100% - 100px)) scale(1.5); opacity: 0; }
+}
+
+@keyframes coreGlowPulse {
+  0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+}
+
+.core-pulse {
+  animation: coreGlowPulse 2s ease-in-out infinite alternate;
+}
+
+.liquid-gradient {
+  background: linear-gradient(180deg, rgba(34,211,238,0.4) 0%, rgba(14,165,233,0.6) 100%);
+  box-shadow: inset 0 4px 12px rgba(255,255,255,0.2);
+}
+
+.glass-vessel {
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05) 0%, transparent 40%),
+              linear-gradient(180deg, rgba(15,23,42,0.4) 0%, rgba(2,6,23,0.8) 100%);
+  box-shadow: inset 0 0 20px rgba(56,189,248,0.1),
+              inset 0 0 0 2px rgba(56,189,248,0.2),
+              0 20px 50px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+}
+
+.control-rod {
+  background: linear-gradient(90deg, #64748b 0%, #94a3b8 50%, #64748b 100%);
+  box-shadow: 0 0 10px rgba(14,165,233,0.2);
+}
+
+.pipe-segment {
+  background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+  border: 1px solid #475569;
+}
