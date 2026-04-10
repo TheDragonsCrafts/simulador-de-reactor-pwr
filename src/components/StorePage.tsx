@@ -50,7 +50,7 @@ export function StorePage({ sim, onBuyUpgrade }: StorePageProps) {
           {UPGRADES.map((upgrade) => {
             const level = sim.upgrades[upgrade.id] || 0;
             const isMax = level >= 5;
-            const cost = upgrade.baseCost * Math.pow(1.5, level);
+            const cost = Math.ceil(upgrade.baseCost * Math.pow(1.5, level));
 
             return (
               <div
